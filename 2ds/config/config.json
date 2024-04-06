@@ -1,0 +1,73 @@
+{
+    "api_token": "SmUjiWZfS7t9zVvmGO84jKtxvbrIG9",
+    "api_base": "", 
+    "frame_interval": 2,
+    "frame_increment": 1,
+    "threshold": 75,
+    "contour_area": 500,
+    "nbr_frame_to_skip": 450,
+    "nbr_frame_before_inference": 100,
+    "line_y1": 420,
+    "line_y2": 720,
+    "line_l_x1": 0,
+    "line_l_x2": 500,
+    "line_r_x1": 780,
+    "line_r_x2": 1280,
+    "pins_y1": 120,
+    "pins_y2": 720,
+    "pins_l_x1": 0,
+    "pins_l_x2": 600,
+    "pins_r_x1": 680,
+    "pins_r_x2": 1280,
+    "out_folder_path": "output/",
+    "out_main_name": "output_main.avi",
+    "out_lineL_name": "output_lineL.avi",
+    "out_lineR_name": "output_lineR.avi",
+    "out_pins_name": "output_pinsL3.avi",
+
+    "frame": {
+        "frame_interval": 2,
+        "frame_increment": 1
+    },
+    "detect_move": {
+        "threshold": 75,
+        "contour_area": 500,
+        "nbr_frame_to_skip": 450,
+        "nbr_frame_before_inference": 100
+    },
+    "zones": {
+        "line": {
+            "y1": 420,
+            "y2": 720
+        },
+        "line_left": {
+            "x1": 0,
+            "x2": 500
+        },
+        "line_right": {
+            "x1": 780,
+            "x2": 1280
+        },
+        "pins_left": {
+            "x1": 0,
+            "x2": 600
+        },
+        "pins_right": {
+            "x1": 680,
+            "x2": 1280
+        },
+        "pins": {
+            "y1": 120,
+            "y2": 720
+        }
+    },
+    "output": {
+        "folder_path": "output/",
+        "video": {
+            "main_name": "output_main.avi",
+            "lineL_name": "output_lineL.avi",
+            "lineR_name": "output_lineR.avi",
+            "pins_name": "output_pinsL3.avi"
+        }
+    }
+}

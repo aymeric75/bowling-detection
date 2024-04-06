@@ -1,0 +1,8 @@
+2023-11-08 15:47:51,357 - INFO - Le log a été configuré.
+2023-11-08 15:47:51,358 - INFO - Requête de mise à jour de configuration
+2023-11-08 15:49:01,127 - INFO - Le log a été configuré.
+2023-11-08 15:49:01,128 - INFO - Requête de mise à jour de configuration
+2023-11-08 15:49:37,225 - INFO - Le log a été configuré.
+2023-11-08 15:49:37,225 - INFO - Requête de mise à jour de configuration
+2023-11-08 15:49:37,821 - INFO - Le log a été configuré.
+2023-11-08 15:49:37,821 - INFO - Requête de mise à jour de configuration
