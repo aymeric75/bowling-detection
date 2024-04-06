@@ -1,0 +1,203 @@
+
+
+
+
+################# CONFIG RAPSBERRY DE BASE #####################################
+
+## Insta de l'OS
+
+	Raspberry Pi Imager : dans "CHOISIR OS" > Raspberry Pi OS (Other) > le premier Raspberry Pi 64 bit de la liste (Debian BullsEye, important pour compatibilité Picamera2)
+
+				flasher l'image
+
+				Une fois créé, y accéder et mettre un fichier nommé "ssh" sans extension à la racine (permet d'activer l'accès SSH)
+
+
+
+## Config du Wifi (optionnel, sinon une connection internet avec Ethernet/RJ45 fonctionne sans besoin de configuration)
+
+	!Attention! Après des tests de plusieurs tutoriels, seulement cette config semble fonctionner correctement sur Raspberry 4
+
+	[source: https://apical.xyz/fiches/l_unite_centrale_du_systeme_domotique_002/configurer_le_reseau_wi-fi_sur_le_raspberry_pi#surcarte]
+
+	Une fois connecté au Raspberry:
+
+			sudo nano /etc/wpa_supplicant/wpa_supplicant.conf
+
+			PUIS copier coller
+
+			country=CA  # J'ai essayé FR, ça fonctionne aussi
+			ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+			update_config=1
+
+			network={
+    				ssid="NOM-DU-RESEAU" # ne pas oublier les quotes
+    				psk="MOT-DE-PASSE-DU-RESEAU" # ne pas oublier les quotes
+			}
+			
+
+			ENSUITE tester si la commande suivante ne retourne pas d'erreur 
+
+				sudo ip link set wlan0 up
+
+			SI ERROR SAYING: RFKILL stuff ===> faire rfkill list PUIS rfkill unblock NUMERO_DE_LA_ou_ça_bloque
+
+
+
+	====> Cette config permet d'accéder au raspberry DEPUIS un autre appareil connecté au même réseau local (faire ping raspberrypi, noté l'ip, puis ssh pi@whatever_ip_you_noted puis mdp: raspberry)
+					
+
+################# CONFIG RAPSBERRY AVANCÉE #####################################
+
+
+## Ouvrir l'accès SSH à une adresse IP publique (accessible depuis n'importe où)
+
+	
+	ouvrir un compte premium sur ngrok.com
+
+	Aller sur Cloud Edge > tcp addresses > New tcp address
+
+		à la fin du processus, on vous affichera une commande du type: ngrok tcp --region=eu --remote-addr=3.tcp.eu.ngrok.io:20710 22 
+
+		Cette commande, une fois lancée sur le Raspberry, permet d'ouvrir le port 22 (ssh) à internet
+
+
+
+	Ensuite, il faut que la commande ci dessus puisse se lancer par défaut au démarrage:
+
+		### 
+
+		sudo contrab -e
+
+		puis coller cette ligne à la fin du fichier:
+
+			@reboot /home/pi/Downloads/ngrok tcp --region=eu --remote-addr=3.tcp.eu.ngrok.io:20710 22 &
+
+
+		fermer le fichier avec CTRL+X 
+
+		###
+
+			OU au lieu d'utiliser crontab, utiliser systemd
+
+					ngrok service install --config $HOME/.config/ngrok/ngrok.yml
+
+					(source https://ngrok.com/docs/guides/device-gateway/raspberry-pi/ ?)
+
+
+		redémarrer le raspberry
+
+
+	
+	====> Maintenant, on peut accéder au raspberry depuis n'importe quelle connection internet: ssh -p 20710 pi@3.tcp.eu.ngrok.io OU depuis VSCode pi@3.tcp.eu.ngrok.io:20710 (plugin SSH)
+
+
+
+
+## insta du EDGE TPU USB
+
+	[source: https://coral.ai/docs/accelerator/get-started/#1-install-the-edge-tpu-runtime]
+
+
+	Sur le Raspberry, depuis une ligne de commande (et depuis n'importe quel folder)
+
+	
+	echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
+	curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+	sudo apt-get update
+	sudo apt-get install libedgetpu1-std
+
+	ENSUITE brancher le Edge TPU avec l'USB 3.0 fourni sur un slot USB bleu
+
+	(optionnellement possible d'installer l'edge en mode "maximum operating frequency", voir source)
+
+
+## Config de la caméra
+
+	s'assurer que Interfaces Options puis Legacy Camera Disable
+
+	sudo raspi-config > Interfaces > Camera Legacy, mettre à OFF
+
+	Reboot
+
+
+################# CODE #####################################
+
+
+	######################### Pycoral ##################################################################
+	
+	## Installation de la library Pycocal   [source: https://coral.ai/software/#pycoral-api]
+		
+	### Insta des packages Debian [source: https://coral.ai/software/#debian-packages]
+
+		echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
+		echo "deb https://packages.cloud.google.com/apt coral-cloud-stable main" | sudo tee /etc/apt/sources.list.d/coral-cloud.list
+		curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+		sudo apt-get update
+	
+
+	### Insta de la librarie
+
+		sudo apt-get install python3-pycoral
+		
+
+	####################### Picamera2 #######################################################################
+	[source: https://github.com/raspberrypi/picamera2]
+
+	## Installation
+
+		sudo apt install -y python3-picamera2
+	
+
+	################### Installation du code ############################################################################
+
+	
+
+	[source: https://github.com/google-coral/pycoral puis https://github.com/google-coral/pycoral/blob/master/examples/detect_image.py]
+
+	Depuis le Desktop
+
+		git clone https://github.com/google-coral/pycoral.git
+
+		cd pycoral/examples
+
+		copier le fichier loop.py dans ce répertoire
+
+		puis pour lancer le programme:
+
+		python loop.py 		
+
+			--record on : pour enregistrer la vidéo (s'enregistre en tant que output.avi), sinon ne rien spécifier
+
+			--max_frames (si non précisé, alors boucle continue) : spécifie le nombre de frame max avant fermeture du programme, sinon tourne à l'infini
+	
+			--send_post  (si non précisé, alors non envoyé) : envoie un POST à chaque inférence
+
+			--show_on_screen (si non précisé, alors faux) : il faut un écran branché directement sur le raspberry !
+
+	
+
+
+	##################  https://coral.ai/docs/edgetpu/retrain-detection/ #######################################################
+
+
+		ET AUSSI https://coral.ai/models/object-detection/
+
+
+
+
+
+
+
+
+
+
+
+
+############################################# DEBUG
+
+
+		Failed to load delegate from libedgetpu.so.1.0 error
+
+
+				DANS notre cas la solution était de changer le cable pour un USB 3.1 (10Gbps)
