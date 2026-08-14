@@ -1,0 +1,24 @@
+{
+  "camera": {"width": 1280, "height": 720, "fps": 30},
+  "processing": {"every_n_frames": 2},
+  "motion": {"pixel_threshold": 75, "minimum_contour_area": 500},
+  "timing": {"settle_frames": 100, "cooldown_frames": 450},
+  "inference": {
+    "model": "../model/detect_edgetpu.tflite",
+    "labels": "../model/labels.txt",
+    "confidence_threshold": 0.2,
+    "samples": 5
+  },
+  "lanes": {
+    "left": {
+      "motion_roi": [0, 420, 500, 720],
+      "pins_roi": [0, 120, 600, 720]
+    },
+    "right": {
+      "motion_roi": [780, 420, 1280, 720],
+      "pins_roi": [680, 120, 1280, 720]
+    }
+  },
+  "output": {"directory": "../output"},
+  "reporting": {"url": null}
+}
