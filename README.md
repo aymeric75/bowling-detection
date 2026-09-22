@@ -7,7 +7,7 @@ counts the pins left standing on two adjacent lanes.
 
 [Download the full-resolution MP4](demo/showcase/bowling-detection-demo.mp4)
 
-## The system
+## Architecture
 
 The prototype was designed to run entirely at the bowling alley:
 
@@ -18,15 +18,21 @@ The prototype was designed to run entirely at the bowling alley:
 - **Custom TensorFlow Lite object detector** trained to recognize the top of a
   standing pin (`topPin`)
 
-One camera observes two lanes. Each lane is processed independently, so a throw
-on one lane does not block detection on the other.
+One camera observes two lanes. Each lane has its own motion detector and state
+machine. Both lanes are evaluated sequentially in the same capture loop and
+share one Coral detector.
 
-```text
-Picamera2 (1280×720)
-        │
-        ├── left motion ROI  ── throw detected ──┐
-        │                                        ├── settle ── Coral inference ── count
-        └── right motion ROI ── throw detected ──┘
+```mermaid
+flowchart TD
+    camera["Picamera2 camera<br/>1280 x 720 at 30 fps"] --> app["Raspberry Pi 4 / Python<br/>Process every second captured frame"]
+    app --> left["Left lane<br/>OpenCV motion_roi + state machine"]
+    app --> right["Right lane<br/>OpenCV motion_roi + state machine"]
+    left --> crop["After the triggered lane's settling delay<br/>Crop its 600 x 600 pins_roi"]
+    right --> crop
+    crop --> coral["Coral USB Edge TPU / TensorFlow Lite<br/>Detect standing pin tops: topPin"]
+    coral --> count["For that lane: sample 5 processed frames<br/>Keep the image with the highest count"]
+    count --> output["Annotated JPEG + JSON per lane"]
+    output -.-> backend["Optional backend API"]
 ```
 
 ## Detection sequence
@@ -34,8 +40,8 @@ Picamera2 (1280×720)
 For each lane, the application:
 
 1. Compares consecutive frames inside a lower-lane region of interest.
-2. Detects the ball from thresholded motion contours.
-3. Waits for the ball to hit and the pin deck to settle.
+2. Treats sufficiently large thresholded motion contours as a throw trigger.
+3. Waits a fixed delay intended to allow the impact and pin deck to settle.
 4. Crops that lane's 600×600 pin-deck region.
 5. Runs five Edge TPU inferences on consecutive processed frames.
 6. Keeps the frame with the highest confident detection count.
@@ -45,6 +51,39 @@ For each lane, the application:
 The repeated-inference strategy comes directly from the original prototype. It
 reduces the chance that a single blurred or partially occluded frame produces a
 low count.
+
+## Per-lane state machine
+
+The application controls the sequence in
+[pipeline.py](src/bowling_detection/pipeline.py). The model detects pin tops in
+individual images; it does not track the stages of a throw.
+
+```mermaid
+stateDiagram-v2
+    direction TB
+    [*] --> ARMED
+    ARMED: ARMED - watch motion_roi
+    SETTLING: SETTLING - wait for fixed delay
+    SAMPLING: SAMPLING - infer on pins_roi
+    COOLDOWN: COOLDOWN - ignore motion
+
+    ARMED --> SETTLING: Motion trigger; record frame index
+    SETTLING --> SAMPLING: 100 captured frames since trigger
+    SAMPLING --> SAMPLING: Fewer than 5 samples collected
+    SAMPLING --> COOLDOWN: 5 samples; publish maximum count
+    COOLDOWN --> ARMED: 450 captured frames since trigger
+```
+
+These are the defaults in [config/bowling.json](config/bowling.json). Timers use
+captured-frame indices, including frames skipped by processing. At an effective
+30 fps, sampling starts about 3.3 seconds after the trigger and the lane rearms
+about 15 seconds after the trigger. The cooldown deadline is measured from the
+initial motion trigger, not from result publication.
+
+The current transitions are based on motion and elapsed frame counts. Ball
+identity, impact, the occluding panel, and actual pin stability are not detected.
+An event-driven sequence would require additional detection logic and is not
+implemented here.
 
 ## Repository structure
 
