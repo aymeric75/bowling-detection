@@ -31,20 +31,14 @@ Picamera2 (1280×720)
 
 ## Detection sequence
 
-For each lane, the application:
+Each lane follows four states (default configuration):
 
-1. Compares consecutive frames inside a lower-lane region of interest.
-2. Detects the ball from thresholded motion contours.
-3. Waits for the ball to hit and the pin deck to settle.
-4. Crops that lane's 600×600 pin-deck region.
-5. Runs five Edge TPU inferences on consecutive processed frames.
-6. Keeps the frame with the highest confident detection count.
-7. Saves the annotated image and structured result.
-8. Ignores further motion until the lane cooldown finishes.
-
-The repeated-inference strategy comes directly from the original prototype. It
-reduces the chance that a single blurred or partially occluded frame produces a
-low count.
+| State | Behavior |
+|---|---|
+| `ARMED` | Detect motion in `motion_roi` to trigger the sequence. |
+| `SETTLING` | Wait 100 captured frames after the trigger. |
+| `SAMPLING` | Run 5 inferences on `pins_roi`; save the highest count and its annotated image. |
+| `COOLDOWN` | Ignore motion until 450 captured frames after the trigger, then return to `ARMED`. |
 
 ## Repository structure
 
