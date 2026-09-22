@@ -40,6 +40,11 @@ Each lane follows four states (default configuration):
 | `SAMPLING` | Run 5 inferences on `pins_roi`; save the highest count and its annotated image. |
 | `COOLDOWN` | Ignore motion until 450 captured frames after the trigger, then return to `ARMED`. |
 
+ROI means *region of interest*, a rectangular area of the camera image:
+
+- `motion_roi`: the area monitored for movement to trigger the sequence.
+- `pins_roi`: the area sent to the model to count standing pins.
+
 ## Repository structure
 
 ```text
